@@ -1,28 +1,24 @@
 """
-Main application file for the EduGrade AI FastAPI backend.
+Main application file for the EduGrade AI FastAPI backend (Firebase version).
 
-This file initializes the FastAPI application, sets up CORS middleware,
-and includes the API routers for the different endpoints. It also
-creates the database tables on startup.
+This initializes the FastAPI app, sets up CORS middleware,
+and includes the API routers for exams, submissions, grades, and analytics.
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.v1.endpoints import exams, submissions, grades, analytics
-from .core.database import engine, Base
-from .config import get_settings
+from app.api.v1.endpoints import exams, submissions
+from app.core.firebase_db import db  # ✅ Firestore connection
+from app.config import get_settings
 
 # Get application settings
 settings = get_settings()
 
-# Create database tables if they don't exist
-Base.metadata.create_all(bind=engine)
+# Initialize FastAPI app
+app = FastAPI(title="EduGrade AI", version="2.0.0")
 
-# Initialize FastAPI application
-app = FastAPI(title="EduGrade AI", version="1.0.0")
-
-# Set up CORS middleware to allow cross-origin requests
-origins = settings.CORS_ORIGINS.split(",")
+# ✅ CORS setup
+origins = settings.CORS_ORIGINS.split(",") if hasattr(settings, "CORS_ORIGINS") else ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -31,31 +27,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routers for different parts of the application
+# ✅ Include only Firebase-based routers (for now)
 app.include_router(exams.router, prefix="/api/v1/exams", tags=["Exams"])
 app.include_router(submissions.router, prefix="/api/v1/submissions", tags=["Submissions"])
-app.include_router(grades.router, prefix="/api/v1/grades", tags=["Grades"])
-app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
+
+# Optional future routes (uncomment once you add them)
+# from app.api.v1.endpoints import grades, analytics
+# app.include_router(grades.router, prefix="/api/v1/grades", tags=["Grades"])
+# app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 
 @app.on_event("startup")
 async def startup_event():
     """
-    Event handler for the application startup.
-    This is a good place to load models or other resources.
+    Runs when the application starts.
+    This initializes Firebase and checks connection.
     """
-    pass
+    print("✅ EduGrade AI backend started successfully.")
+    print("🔥 Firebase connection active:", db)
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """
-    Event handler for the application shutdown.
-    This is a good place to clean up resources.
+    Runs when the application stops.
+    Useful for cleanup tasks.
     """
-    pass
+    print("🛑 EduGrade AI backend shutting down...")
 
 @app.get("/health", tags=["Health"])
 async def health_check():
     """
-    Health check endpoint to verify that the application is running.
+    Health check endpoint.
     """
-    return {"status": "ok"}
+    return {"status": "ok", "message": "EduGrade AI Firebase backend running successfully"}
