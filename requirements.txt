@@ -17,10 +17,8 @@ Pillow
 numpy
 scikit-image
 
-# Google Cloud Vision
-google-cloud-vision
-
 # Transformers
+requests
 transformers
 torch
 torchvision
@@ -29,3 +27,4 @@ pytesseract
 
 # Google Generative AI
 google-generativeai
+requests

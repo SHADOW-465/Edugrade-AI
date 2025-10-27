@@ -7,7 +7,7 @@ sheets using a large language model.
 
 from .base_agent import BaseAgent
 from typing import List, Dict, Any
-import openai
+import google.generativeai as genai
 import json
 from ..utils.prompt_templates import GRADING_PROMPT
 
@@ -18,7 +18,7 @@ class GradingAgent(BaseAgent):
     This agent uses a large language model to grade the extracted text from
     the answer sheets based on the provided rubric.
     """
-    def __init__(self, api_key: str, model: str = "gpt-4o"):
+    def __init__(self, api_key: str, model: str = "gemini-pro"):
         """
         Initializes the grading agent.
 
@@ -27,8 +27,8 @@ class GradingAgent(BaseAgent):
             model: The name of the language model to use.
         """
         super().__init__("grading_agent")
-        self.client = openai.OpenAI(api_key=api_key)
-        self.model = model
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model)
 
     def grade_answer(
         self,
@@ -59,16 +59,30 @@ class GradingAgent(BaseAgent):
             max_marks=max_marks
         )
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert exam evaluator."},
-                    {"role": "user", "content": prompt},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.3
+            # Gemini does not have a separate system prompt, so it's combined with the user prompt.
+            full_prompt = f"You are an expert exam evaluator.\n\n{prompt}"
+
+            response = self.model.generate_content(
+                full_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    # candidate_count=1, # Not directly equivalent, but Gemini returns choices
+                    # stop_sequences=None,
+                    # max_output_tokens=2048,
+                    temperature=0.3,
+                    # response_mime_type="application/json" # Use this if your model version supports it
+                )
             )
-            return json.loads(response.choices[0].message.content)
+
+            # Use a regex to find the json block
+            import re
+            match = re.search(r"```json\n(.*)\n```", response.text, re.DOTALL)
+            if match:
+                json_string = match.group(1).strip()
+            else:
+                # Fallback for cases where the markdown block is missing
+                json_string = response.text.strip()
+
+            return json.loads(json_string)
         except Exception as e:
             self.logger.error(f"Error grading answer: {e}")
             return {

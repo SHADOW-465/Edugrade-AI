@@ -31,7 +31,7 @@ Build a production-grade, modular automated answer sheet grading system called "
 1. Preprocessing Agent (OpenCV)
 2. Segmentation Agent (YOLOv8)
 3. OCR Agent (DeepSeek-OCR + TrOCR ensemble)
-4. Grading Agent (GPT-4o/Gemini with rubric-based evaluation)
+4. Grading Agent (Gemini with rubric-based evaluation)
 5. Feedback Agent (Personalized student feedback)
 6. Storage Agent (Supabase + cryptographic hashing)
 - **Database**: Supabase (PostgreSQL) with SQLAlchemy ORM
@@ -750,7 +750,7 @@ Pages (using st.Page):
 
 5. Settings:
    - API endpoint configuration
-   - Model selection (GPT-4o, Gemini, etc.)
+   - Model selection (Gemini, etc.)
    - Grading strictness slider
    - Export preferences
 
