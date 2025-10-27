@@ -7,9 +7,10 @@ and class-level insights for teachers.
 
 from .base_agent import BaseAgent
 from typing import List, Dict, Any
-import openai
+import google.generativeai as genai
 import json
 from ..utils.prompt_templates import FEEDBACK_PROMPT, CLASS_INSIGHTS_PROMPT
+import re
 
 class FeedbackAgent(BaseAgent):
     """
@@ -19,7 +20,7 @@ class FeedbackAgent(BaseAgent):
     for students based on their performance and to generate class-level
     insights for teachers.
     """
-    def __init__(self, api_key: str, model: str = "gpt-4o"):
+    def __init__(self, api_key: str, model: str = "gemini-pro"):
         """
         Initializes the feedback agent.
 
@@ -28,8 +29,8 @@ class FeedbackAgent(BaseAgent):
             model: The name of the language model to use.
         """
         super().__init__("feedback_agent")
-        self.client = openai.OpenAI(api_key=api_key)
-        self.model = model
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model)
 
     def generate_feedback(
         self,
@@ -62,15 +63,14 @@ class FeedbackAgent(BaseAgent):
             question_breakdown=question_breakdown
         )
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful and encouraging teacher."},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.7
+            full_prompt = f"You are a helpful and encouraging teacher.\n\n{prompt}"
+            response = self.model.generate_content(
+                full_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7
+                )
             )
-            return response.choices[0].message.content
+            return response.text
         except Exception as e:
             self.logger.error(f"Error generating feedback for {student_name}: {e}")
             return "Could not generate feedback due to an internal error."
@@ -87,16 +87,22 @@ class FeedbackAgent(BaseAgent):
         """
         prompt = CLASS_INSIGHTS_PROMPT.format(all_grades_json=json.dumps(all_grades))
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert data analyst for educational data."},
-                    {"role": "user", "content": prompt},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.5
+            full_prompt = f"You are an expert data analyst for educational data.\n\n{prompt}"
+            response = self.model.generate_content(
+                full_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.5
+                )
             )
-            return json.loads(response.choices[0].message.content)
+
+            # Extracting the json string which is wrapped in ```json ```
+            match = re.search(r"```json\n(.*)\n```", response.text, re.DOTALL)
+            if match:
+                json_string = match.group(1).strip()
+            else:
+                json_string = response.text.strip()
+
+            return json.loads(json_string)
         except Exception as e:
             self.logger.error(f"Error generating class insights: {e}")
             return {"error": "Could not generate class insights."}
