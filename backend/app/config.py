@@ -1,9 +1,5 @@
 """
-Configuration management for the EduGrade AI application.
-
-This file defines a Pydantic Settings class to manage environment-based
-configuration. It loads settings from a .env file and provides them
-to the rest of the application.
+Configuration management for the EduGrade AI application (Firebase version).
 """
 
 from pydantic_settings import BaseSettings
@@ -11,12 +7,10 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     """
-    Application settings.
-
-    All settings are loaded from environment variables or a .env file.
+    Application settings for Firebase-based EduGrade AI.
     """
-    # Supabase/PostgreSQL settings
-    DATABASE_URL: str
+    # Firebase
+    FIREBASE_CREDENTIALS: str = "app/firebase_service_key.json"
 
     # API keys for external services
     OPENAI_API_KEY: str
@@ -31,23 +25,13 @@ class Settings(BaseSettings):
     YOLO_MODEL: str = "yolov8n.pt"
     TESSERACT_PATH: str = "/usr/bin/tesseract"
 
-    # CORS settings for the FastAPI backend
+    # CORS settings for frontend
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8501"
 
     class Config:
-        """
-        Pydantic settings configuration.
-        """
         env_file = ".env"
 
 @lru_cache()
 def get_settings() -> Settings:
-    """
-    Get the application settings.
-
-    This function is cached to ensure that the settings are only loaded once.
-
-    Returns:
-        Settings: The application settings.
-    """
+    """Load and cache settings."""
     return Settings()
