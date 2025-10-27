@@ -1,128 +1,72 @@
-# EduGrade AI - Multi-Agentic Answer Sheet Evaluator
+# EduGrade AI
 
-An automated exam grading system for handwritten answer sheets using multi-agent AI architecture.
+EduGrade AI is a multi-agentic answer sheet grading system that automates the process of grading handwritten answer sheets. It uses a combination of computer vision, OCR, and large language models to provide accurate grades and personalized feedback.
 
 ## Features
 
-- **Image Preprocessing Agent**: OpenCV + YOLOv8 for answer sheet detection and segmentation
-- **OCR Extraction Agent**: Google Vision API + TrOCR for multi-language text extraction
-- **Evaluation Agent**: Google Gemini + Perplexity Sonar API for semantic grading
-- **Grade Storage Agent**: SHA-256 cryptographic hashing for tamper-proof storage
-- **Teacher Dashboard**: Streamlit/Gradio interface for review and override capabilities
+- **Automated Grading**: Automatically grades handwritten answer sheets.
+- **Personalized Feedback**: Provides personalized feedback for each student.
+- **Teacher Dashboard**: A dashboard for teachers to review and override grades.
+- **Supabase Integration**: Uses Supabase for the database.
+- **Streamlit Frontend**: A Streamlit frontend for rapid prototyping and hackathons.
+- **Next.js Frontend (in progress)**: A Next.js frontend for production use.
 
-## Project Structure
-
-```
-Edugrade-AI/
-├── agents/                 # Multi-agent system components
-│   ├── image_preprocessing.py
-│   ├── ocr_extraction.py
-│   ├── evaluation.py
-│   └── grade_storage.py
-├── api/                   # FastAPI backend
-│   ├── main.py
-│   ├── endpoints/
-│   └── models/
-├── dashboard/             # Teacher dashboard
-│   ├── streamlit_app.py
-│   └── gradio_app.py
-├── database/              # Database models and migrations
-│   ├── models.py
-│   └── migrations/
-├── utils/                 # Utility functions
-│   ├── image_utils.py
-│   ├── text_utils.py
-│   └── crypto_utils.py
-├── tests/                 # Unit tests
-├── docker/                # Docker configuration
-├── requirements.txt
-└── README.md
-```
-
-## Setup Instructions
+## Setup Guide
 
 ### Prerequisites
 
 - Python 3.9+
-- Docker (optional)
-- Google Cloud Vision API key
-- Google Gemini API key
-- Perplexity API key
+- Docker
+- Node.js (for Next.js frontend)
+- A Supabase account
 
-### Installation
+### 1. Clone the repository
 
-1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd Edugrade-AI
+cd edugrade-ai
 ```
 
-2. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+### 2. Set up Supabase
+
+1. Go to [Supabase](https://supabase.io/) and create a new project.
+2. In your Supabase project, go to `Settings` > `Database`.
+3. Find the `Connection string` and copy it.
+
+### 3. Configure environment variables
+
+Create a `.env` file in the root of the project and add the following environment variables:
+
+```
+DATABASE_URL=<your-supabase-connection-string>
+OPENAI_API_KEY=<your-openai-api-key>
+PERPLEXITY_API_KEY=<your-perplexity-api-key>
 ```
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+### 4. Run the application
 
-4. Set up environment variables:
-```bash
-cp env.example .env
-# Edit .env with your API keys:
-# - GOOGLE_GEMINI_API_KEY=your_gemini_api_key
-# - GOOGLE_VISION_API_KEY=your_vision_api_key
-# - PERPLEXITY_API_KEY=your_perplexity_api_key
-```
-
-5. Initialize database:
-```bash
-python -m database.init_db
-```
-
-6. Run the application:
-```bash
-# Start FastAPI backend
-uvicorn api.main:app --reload
-
-# Start teacher dashboard (in another terminal)
-streamlit run dashboard/streamlit_app.py
-```
-
-### Docker Setup
+You can run the application using Docker Compose:
 
 ```bash
-# Build and run with Docker Compose
 docker-compose up --build
 ```
 
-## API Endpoints
+This will start the backend server, the Streamlit frontend, and the Next.js frontend.
 
-- `POST /upload` - Upload answer sheet image
-- `GET /grades/{student_id}` - Get student grades
-- `POST /override` - Teacher grade override
-- `GET /analytics` - Class performance analytics
+- **Backend API**: `http://localhost:8000`
+- **Streamlit Dashboard**: `http://localhost:8501`
+- **Next.js App**: `http://localhost:3000`
 
-## Configuration
+## How to use
 
-Edit `config/settings.py` to configure:
-- API endpoints
-- Model parameters
-- Database settings
-- File storage paths
+1. **Create an exam**: Use the API to create an exam with an answer key.
+2. **Upload an answer sheet**: Use the Streamlit dashboard to upload an answer sheet.
+3. **View the results**: View the grading results in the Streamlit dashboard.
 
 ## Testing
 
+To run the tests, you can use `pytest`:
+
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=agents --cov=api --cov=dashboard
+pytest backend/tests
 ```
-
-## License
-
-MIT License

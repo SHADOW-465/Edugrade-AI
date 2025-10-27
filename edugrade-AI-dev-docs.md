@@ -33,8 +33,8 @@ Build a production-grade, modular automated answer sheet grading system called "
 3. OCR Agent (DeepSeek-OCR + TrOCR ensemble)
 4. Grading Agent (GPT-4o/Gemini with rubric-based evaluation)
 5. Feedback Agent (Personalized student feedback)
-6. Storage Agent (PostgreSQL + cryptographic hashing)
-- **Database**: PostgreSQL with SQLAlchemy ORM
+6. Storage Agent (Supabase + cryptographic hashing)
+- **Database**: Supabase (PostgreSQL) with SQLAlchemy ORM
 - **Authentication**: JWT-based (optional for production)
 - **API Documentation**: Auto-generated via FastAPI/Swagger
 
@@ -187,7 +187,14 @@ Create a Pydantic Settings class for environment-based configuration.
 - Include validation for required fields
 
 
-### **B. Database Models (`backend/app/models/database.py`)**
+### **B. Supabase Setup**
+
+1. **Create a Supabase Project**: Go to [Supabase](https'//supabase.io/) and create a new project.
+2. **Get the Database URL**: In your Supabase project, go to `Settings` > `Database` and find the `Connection string`. This will be your `DATABASE_URL`.
+3. **Update .env**: Add the `DATABASE_URL` to your `.env` file.
+
+
+### **C. Database Models (`backend/app/models/database.py`)**
 
 ```python
 """
@@ -1007,17 +1014,6 @@ services:
       - ./data:/app/data
     depends_on:
       - db
-
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=edugrade
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
 
   streamlit:
     build: ./frontend/streamlit
