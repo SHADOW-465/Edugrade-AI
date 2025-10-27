@@ -8,9 +8,18 @@ response validation.
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
-from .database import StatusEnum
+from enum import Enum
 
 
+# ✅ Enum for submission status
+class StatusEnum(str, Enum):
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+
+
+# ✅ Schema for question rubric
 class QuestionRubric(BaseModel):
     """
     Schema for the rubric of a single question.
@@ -21,6 +30,7 @@ class QuestionRubric(BaseModel):
     max_marks: int
 
 
+# ✅ Base schema for exams
 class ExamBase(BaseModel):
     """
     Base schema for an exam.
@@ -47,9 +57,10 @@ class ExamResponse(ExamBase):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
+# ✅ Submission schemas
 class SubmissionBase(BaseModel):
     """
     Base schema for a submission.
@@ -88,9 +99,10 @@ class SubmissionResponse(SubmissionBase):
     processed_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
+# ✅ Grade schemas
 class GradeOverride(BaseModel):
     """
     Schema for overriding a grade.
@@ -111,9 +123,10 @@ class GradeResponse(BaseModel):
     hash_signature: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
+# ✅ Analytics schema
 class AnalyticsResponse(BaseModel):
     """
     Schema for the response when analytics are retrieved.
