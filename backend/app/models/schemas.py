@@ -134,3 +134,16 @@ class AnalyticsResponse(BaseModel):
     class_average: float
     distribution: dict
     common_errors: List[str]
+
+# DevDock schemas
+class Credential(BaseModel):
+    """
+    Schema for a credential.
+    """
+    credential: str
+
+class VerificationResponse(BaseModel):
+    """
+    Schema for the response when a credential is verified.
+    """
+    verified: bool

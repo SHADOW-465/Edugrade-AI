@@ -71,6 +71,29 @@ class SegmentationAgent(BaseAgent):
             cropped_images.append(image[y1:y2, x1:x2])
         return cropped_images
 
+    def segment_into_grid(self, image: np.ndarray, grid_size=(5, 5)) -> List[Dict[str, Any]]:
+        """
+        Segments an image into a grid.
+
+        Args:
+            image: The image to segment.
+            grid_size: The size of the grid (rows, columns).
+
+        Returns:
+            A list of dictionaries, where each dictionary contains the
+            bounding box coordinates for a grid cell.
+        """
+        h, w = image.shape[:2]
+        rows, cols = grid_size
+        box_h, box_w = h // rows, w // cols
+        boxes = []
+        for i in range(rows):
+            for j in range(cols):
+                x1, y1 = j * box_w, i * box_h
+                x2, y2 = x1 + box_w, y1 + box_h
+                boxes.append({"box": [x1, y1, x2, y2], "confidence": 0.0})
+        return boxes
+
     def process(self, image: np.ndarray) -> Dict[str, Any]:
         """
         Processes an image.
@@ -87,18 +110,16 @@ class SegmentationAgent(BaseAgent):
             if not detected_boxes:
                 # Fallback to grid-based segmentation if detection fails
                 self.logger.warning("No answer boxes detected, falling back to grid-based segmentation.")
-                # Implement grid-based segmentation logic here if needed
-                return {
-                    "answer_boxes": [],
-                    "status": "fallback",
-                    "message": "No answer boxes detected."
-                }
+                detected_boxes = self.segment_into_grid(image)
+                status = "fallback"
+            else:
+                status = "success"
 
             cropped_answers = self.crop_answers(image, detected_boxes)
             return {
                 "answer_boxes": detected_boxes,
                 "cropped_answers": cropped_answers,
-                "status": "success"
+                "status": status
             }
         except Exception as e:
             self.logger.error(f"Error segmenting image: {e}")

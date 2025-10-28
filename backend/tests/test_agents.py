@@ -24,7 +24,14 @@ def sample_image():
     os.remove(test_image_path)
 
 def test_preprocessing_agent(preprocessing_agent, sample_image):
-    result = preprocessing_agent.process(sample_image)
+    result = preprocessing_agent.process(sample_image, sample_image)
     assert result["status"] == "success"
     assert result["preprocessed_image"] is not None
     assert isinstance(result["preprocessed_image"], np.ndarray)
+
+def test_align_image(preprocessing_agent, sample_image):
+    image = cv2.imread(sample_image)
+    result = preprocessing_agent.align_image(image, image)
+    assert "aligned_image" in result
+    assert "transformation_parameters" in result
+    assert "alignment_accuracy" in result
