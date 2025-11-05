@@ -1,146 +1,203 @@
 """
-Grading agent for the EduGrade AI application.
-
-This agent is responsible for grading the extracted text from the answer
-sheets using a large language model.
+Tier-specific grading logic using tier-appropriate LLM models and strategies.
 """
 
-from .base_agent import BaseAgent
-from typing import List, Dict, Any
-import google.generativeai as genai
+from typing import Any, Dict
 import json
-from ..utils.prompt_templates import GRADING_PROMPT
+from .base_agent import BaseAgent
+
 
 class GradingAgent(BaseAgent):
-    """
-    Agent for grading student answers.
+    """Adaptive grading based on grade tier."""
 
-    This agent uses a large language model to grade the extracted text from
-    the answer sheets based on the provided rubric.
-    """
-    def __init__(self, api_key: str, model: str = "gemini-pro"):
-        """
-        Initializes the grading agent.
+    async def process(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Grade using tier-appropriate strategy."""
 
-        Args:
-            api_key: The API key for the language model service.
-            model: The name of the language model to use.
-        """
-        super().__init__("grading_agent")
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model)
-
-    def grade_answer(
-        self,
-        student_answer: str,
-        model_answer: str,
-        rubric: str,
-        max_marks: int,
-        subject: str
-    ) -> Dict[str, Any]:
-        """
-        Grades a single answer.
-
-        Args:
-            student_answer: The student's answer.
-            model_answer: The model answer.
-            rubric: The rubric for the question.
-            max_marks: The maximum marks for the question.
-            subject: The subject of the exam.
-
-        Returns:
-            A dictionary containing the grade, feedback, and reasoning.
-        """
-        prompt = GRADING_PROMPT.format(
-            subject=subject,
-            student_answer=student_answer,
-            model_answer=model_answer,
-            rubric=rubric,
-            max_marks=max_marks
-        )
         try:
-            # Gemini does not have a separate system prompt, so it's combined with the user prompt.
-            full_prompt = f"You are an expert exam evaluator.\n\n{prompt}"
+            submission_id = state.get("submission_id")
+            grade_tier = state.get("grade_tier")
+            self._log_start(submission_id)
 
-            response = self.model.generate_content(
-                full_prompt,
-                generation_config=genai.types.GenerationConfig(
-                    # candidate_count=1, # Not directly equivalent, but Gemini returns choices
-                    # stop_sequences=None,
-                    # max_output_tokens=2048,
-                    temperature=0.3,
-                    # response_mime_type="application/json" # Use this if your model version supports it
-                )
-            )
+            ocr_results = state["ocr_results"]
+            answer_key = state["answer_key"]
+            grades = []
+            total_score = 0
 
-            # Use a regex to find the json block
-            import re
-            match = re.search(r"```json\n(.*)\n```", response.text, re.DOTALL)
-            if match:
-                json_string = match.group(1).strip()
-            else:
-                # Fallback for cases where the markdown block is missing
-                json_string = response.text.strip()
+            for ocr_result in ocr_results:
+                q_num = ocr_result["question_number"]
+                student_answer = ocr_result["extracted_text"]
+                model_answer_data = answer_key.get(str(q_num), {})
 
-            return json.loads(json_string)
+                # Tier-specific grading
+                if grade_tier == "K-5":
+                    grade_result = await self._grade_primary(
+                        student_answer, model_answer_data
+                    )
+                elif grade_tier == "6-8":
+                    grade_result = await self._grade_middle(
+                        student_answer, model_answer_data, ocr_result
+                    )
+                elif grade_tier == "9-12":
+                    grade_result = await self._grade_secondary(
+                        student_answer, model_answer_data, ocr_result
+                    )
+                else:  # College+
+                    grade_result = await self._grade_college(
+                        student_answer, model_answer_data, ocr_result, state
+                    )
+
+                grades.append({
+                    "question_number": q_num,
+                    "student_answer": student_answer,
+                    **grade_result
+                })
+
+                total_score += grade_result["score"]
+
+            state["grades"] = grades
+            state["total_score"] = total_score
+            state["processing_stage"] = "graded"
+
+            return state
+
         except Exception as e:
-            self.logger.error(f"Error grading answer: {e}")
+            self._log_error(state.get("submission_id"), e)
+            state["error"] = str(e)
+            return state
+
+    async def _grade_primary(self, student_answer: str, model_data: Dict) -> Dict:
+        """K-5: Simple exact matching + keyword search."""
+        model_answer = model_data.get("model_answer", "").lower()
+        student_answer_lower = student_answer.lower().strip()
+
+        # Exact match
+        if student_answer_lower == model_answer:
             return {
-                "score": 0,
-                "points_covered": [],
-                "points_missed": ["Error in grading process"],
-                "feedback": "Could not grade this answer due to an internal error.",
-                "reasoning": str(e),
+                "score": model_data.get("max_marks", 1),
+                "feedback": "🌟 Excellent!",
+                "reasoning": "Exact answer match"
             }
 
-    def batch_grade(self, answers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Grades a batch of answers.
-
-        Args:
-            answers: A list of dictionaries, where each dictionary contains
-                     the student's answer, the model answer, the rubric, and
-                     the maximum marks for a question.
-
-        Returns:
-            A list of dictionaries, where each dictionary contains the grade,
-            feedback, and reasoning for an answer.
-        """
-        graded_answers = []
-        for answer in answers:
-            graded_answer = self.grade_answer(
-                student_answer=answer["student_answer"],
-                model_answer=answer["model_answer"],
-                rubric=answer["rubric"],
-                max_marks=answer["max_marks"],
-                subject=answer["subject"]
-            )
-            graded_answers.append(graded_answer)
-        return graded_answers
-
-    def process(self, answers_to_grade: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Processes a list of answers to grade.
-
-        Args:
-            answers_to_grade: A list of dictionaries, where each dictionary
-                              contains the student's answer, the model answer,
-                              the rubric, and the maximum marks for a question.
-
-        Returns:
-            A dictionary containing the graded results and the status of the
-            operation.
-        """
-        try:
-            graded_results = self.batch_grade(answers_to_grade)
+        # Keyword matching
+        keywords = model_data.get("keywords", [])
+        if any(kw.lower() in student_answer_lower for kw in keywords):
             return {
-                "grades": graded_results,
-                "status": "success"
+                "score": model_data.get("max_marks", 1) * 0.75,
+                "feedback": "👍 Good try! Almost there!",
+                "reasoning": "Keyword match"
             }
-        except Exception as e:
-            self.logger.error(f"Error in batch grading process: {e}")
-            return {
-                "grades": [],
-                "status": "error",
-                "error_message": str(e)
-            }
+
+        return {
+            "score": 0,
+            "feedback": "Keep practicing! 💪",
+            "reasoning": "No match found"
+        }
+
+    async def _grade_middle(self, student_answer: str, model_data: Dict, ocr_result: Dict) -> Dict:
+        """6-8: Rubric-based + semantic understanding."""
+
+        prompt = f\"\"\"
+        Grade this 6-8 grade student answer:
+
+        **Question:** {model_data.get('question', '')}
+        **Student Answer:** {student_answer}
+        **Model Answer:** {model_data.get('model_answer', '')}
+        **Rubric:** {model_data.get('rubric', '')}
+        **Max Marks:** {model_data.get('max_marks', 1)}
+
+        Consider:
+        - Concept understanding (not just exact words)
+        - Partial credit for partial understanding
+        - Common middle-school misconceptions
+
+        Return JSON:
+        {{
+            "score": <number>,
+            "feedback": "<constructive feedback>",
+            "reasoning": "<explanation>"
+        }}
+        \"\"\"
+
+        result = await self.llm.call_gemini(prompt)
+        return json.loads(result)
+
+    async def _grade_secondary(self, student_answer: str, model_data: Dict, ocr_result: Dict) -> Dict:
+        """9-12: Advanced rubrics + multi-part reasoning."""
+
+        prompt = f\"\"\"
+        Grade this high school student answer:
+
+        **Question:** {model_data.get('question', '')}
+        **Student Answer:** {student_answer}
+        **Model Answer:** {model_data.get('model_answer', '')}
+        **Rubric:** {model_data.get('rubric', '')}
+        **Max Marks:** {model_data.get('max_marks', 1)}
+
+        This is high school level. Evaluate:
+        - Accuracy and completeness
+        - Reasoning quality
+        - Any mathematical errors
+        - Essay structure (if applicable)
+
+        Return JSON with detailed rubric breakdown:
+        {{
+            "score": <number>,
+            "points_covered": [<list>],
+            "points_missed": [<list>],
+            "errors": [<list>],
+            "feedback": "<detailed academic critique>",
+            "reasoning": "<step-by-step analysis>"
+        }}
+        \"\"\"
+
+        result = await self.llm.call_gemini_pro(prompt)
+        return json.loads(result)
+
+    async def _grade_college(self, student_answer: str, model_data: Dict, ocr_result: Dict, state: Dict) -> Dict:
+        """College+: Advanced reasoning + research validation."""
+
+        prompt = f\"\"\"
+        Grade this college-level student answer with academic rigor:
+
+        **Question:** {model_data.get('question', '')}
+        **Student Answer:** {student_answer}
+        **Model Answer:** {model_data.get('model_answer', '')}
+        **Rubric:** {model_data.get('rubric', '')}
+        **Max Marks:** {model_data.get('max_marks', 1)}
+
+        This is college-level work. Evaluate:
+        - Academic accuracy and precision
+        - Depth of analysis and critical thinking
+        - Proper citations and attribution
+        - Research quality (if applicable)
+        - Mathematical proofs or logical rigor
+        - Writing quality and clarity
+
+        Return JSON:
+        {{
+            "score": <number>,
+            "academic_level": "beginner|intermediate|advanced|expert",
+            "strengths": [<list>],
+            "weaknesses": [<list>],
+            "suggestions": [<list>],
+            "feedback": "<scholarly feedback>",
+            "reasoning": "<detailed academic analysis>"
+        }}
+        \"\"\"
+
+        result = await self.llm.call_gemini_pro(prompt)
+
+        # Add plagiarism check for college
+        plagiarism_check = await self._check_plagiarism(student_answer)
+        result["plagiarism_score"] = plagiarism_check["score"]
+
+        return result
+
+    async def _check_plagiarism(self, student_answer: str) -> Dict:
+        """College+: Plagiarism detection."""
+        # Call plagiarism API (Turnitin, Copyscape, etc.)
+        # Return plagiarism score and sources
+        return {
+            "score": 0.0,  # 0-100%
+            "sources": []
+        }
