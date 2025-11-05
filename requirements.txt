@@ -1,31 +1,40 @@
-# Core Framework
+# Core
 fastapi
 uvicorn[standard]
 pydantic
-python-multipart
-sqlalchemy
+pydantic-settings
 
-# Multi-Agent & LLM
+# Multi-agent
 langgraph
-crewai
 langchain
-langchain-openai
 
-# Computer Vision & OCR
+# Advanced OCR (College)
+paddleocr
+sympy
+latex2mathml
+
+# Advanced LLM
+google-generativeai
+openai
+
+# Computer Vision
 opencv-python
 ultralytics
-Pillow
-numpy
-scikit-image
-
-# Transformers
-requests
 transformers
 torch
 torchvision
-easyocr
-pytesseract
+Pillow
+pdf2image
 
-# Google Generative AI
-google-generativeai
+# Plagiarism API (College)
 requests
+
+# Database & Failsafe
+convex
+apscheduler
+tenacity
+
+# Utilities
+python-dotenv
+numpy
+pandas

@@ -1,99 +1,119 @@
-# EduGrade AI
+# 🤖 EduGrade AI: The Super-Smart Grading Robot!
 
-EduGrade AI is a multi-agent automated grading platform for handwritten answer sheets. It uses a combination of computer vision, AI LLMs (Google Gemini), advanced OCR (DeepSeek-OCR, TrOCR), and blockchain credentialing (DevDock) to provide accurate grades and personalized feedback.
+Welcome to EduGrade AI! Imagine you have a friendly robot helper who can read and grade homework for every student, from tiny kindergarteners to super-smart college students. That's what EduGrade AI is! It's a magical tool that looks at pictures of handwritten homework and grades it, giving helpful feedback, all by itself.
 
-## Features
+## ✨ Key Features
 
-- **Template-Based Alignment**: Uses template-based geometric registration for robust alignment of answer sheets.
-- **Automated Grading**: Automatically grades handwritten answer sheets using Google Gemini.
-- **Personalized Feedback**: Provides personalized feedback for each student.
-- **Fact-Checking**: Uses Perplexity for real-time fact-checking.
-- **Blockchain Credentialing**: Stores immutable grades on the DevDock blockchain.
-- **Teacher Dashboard**: A dashboard for teachers to review and override grades.
-- **Firebase Integration**: Uses Firebase for the database.
-- **Streamlit Frontend**: A Streamlit frontend for rapid prototyping and hackathons.
-- **Next.js Frontend (in progress)**: A Next.js frontend for production use.
+-   **🧠 Adapts to Any Grade Level**: Just like a chameleon changes colors, EduGrade AI changes how it grades based on the student's age. It's gentle with little kids and super detailed with college students.
+-   **✍️ Reads All Kinds of Handwriting**: From simple block letters to fancy cursive and even tricky math equations, our robot can read it all.
+-   **✅ Smart Grading**: It doesn't just check for right or wrong. It understands the *meaning* behind the answers.
+-   **👍 Helpful Feedback**: Gives feedback that is just right for the student—encouraging words for younger kids and scholarly advice for older students.
+-   **🔒 Safe and Secure**: Uses a special database called Convex to keep all the grades safe. It even has a backup plan (using a local SQLite database) in case the internet gets sleepy.
+-   **🧑‍🏫 Teacher's Best Friend**: Teachers can easily review all the grades and make changes if they want.
 
-## System Architecture
+---
 
-The system is composed of the following agents:
+## 🚀 Getting Started: Let's Bring Your Robot to Life!
 
-- **Preprocessing Agent**: Performs template-based alignment, deskewing, denoising, and binarization of the images.
-- **Segmentation Agent**: Detects the answer boxes in the image and crops them out.
-- **OCR Agent**: An ensemble of DeepSeek-OCR, TrOCR, and Gemini Vision for accurate OCR.
-- **Grading Agent**: Uses Google Gemini for rubric-based semantic scoring.
-- **Fact-Checking Agent**: Uses Perplexity for real-time fact-checking.
-- **Feedback Agent**: Provides personalized feedback for each student.
+Follow these simple steps to get your own EduGrade AI running. It's like building with LEGOs!
 
-## API Endpoints
+### Part 1: What You'll Need (Your Toolbox)
 
-- `POST /exams/`: Create an exam (answer key, rubric, template)
-- `POST /submissions/`: Upload an answer sheet
-- `GET /submissions/{id}/aligned`: Get the aligned, registered sheet image
-- `GET /submissions/{id}/transforms`: Get the transformation parameters and accuracy
-- `GET /submissions/{id}/grades`: Get the grading results (per question)
-- `PUT /grades/{grade_id}/override`: Teacher override of a score/feedback
-- `GET /analytics/{exam_id}`: Get aggregated analytics
-- `POST /devdock/verify`: Verify a credential on the DevDock blockchain
-- `GET /health`: Health check
+Make sure you have these tools installed on your computer before you start:
 
-## Setup Guide
+1.  **Python**: The language our robot speaks. (Version 3.9 or newer)
+2.  **Docker**: A magic box that runs our app perfectly every time.
+3.  **Git**: A time machine for code, so you can get the latest version.
+4.  **A Code Editor**: Like VS Code or Cursor, a place to look at the code.
 
-### Prerequisites
+### Part 2: Setting Up the Project
 
-- Python 3.9+
-- Docker
-- Node.js (for Next.js frontend)
-- A Firebase account
-- A Google Gemini API key
-- A Perplexity API key
-- A DevDock API key
+#### Step 1: Get the Code
 
-### 1. Clone the repository
+First, you need to copy the project to your computer. Open your computer's command line (like Terminal or PowerShell) and type this:
 
 ```bash
 git clone <repository-url>
 cd edugrade-ai
 ```
 
-### 2. Set up Firebase
+#### Step 2: Your Secret Keys! (Environment Variables)
 
-1. Go to [Firebase](https://firebase.google.com/) and create a new project.
-2. In your Firebase project, go to `Project settings` > `Service accounts`.
-3. Click on `Generate new private key` and download the JSON file.
-4. Save the JSON file as `firebase-credentials.json` in the `backend/app/core` directory.
+Our robot needs some secret keys to connect to its brain and other magical internet services. We'll keep these in a special file called `.env`.
 
-### 3. Configure environment variables
+1.  Find the file named `env.example`.
+2.  Make a copy of it and name the copy `.env`.
+3.  Open the new `.env` file and fill in your secret keys!
 
-Create a `.env` file in the root of the project and add the following environment variables:
+Here’s what each key does and where to get it:
+
+| Variable                  | What it is                                      | Where to Get It                                                                                                                                                                |
+| ------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GEMINI_API_KEY`          | The key to Google's AI brain (Gemini).          | Go to the [Google AI Studio](https://aistudio.google.com/app/apikey) and click "Create API key". Copy the key and paste it here.                                                 |
+| `CONVEX_DEPLOYMENT_URL`   | The address of your Convex database.            | 1. Go to [Convex](https://www.convex.dev/) and create a new project. <br> 2. Follow their instructions to deploy the schema from `backend/convex/`. <br> 3. Copy the Deployment URL from your project settings. |
+| `PADDLEOCR_MODEL_PATH`    | Path to the advanced OCR model.                 | This will be set up automatically by the Docker container, you can often leave this blank or as a default path.                                                                  |
+| `PLAGIARISM_API_KEY`      | Key for checking college papers for copying.    | Sign up for a plagiarism detection service (like Turnitin or a similar API) and get your key from their website.                                                                 |
+
+Your `.env` file should look something like this:
 
 ```
-DATABASE_URL=<your-supabase-connection-string>
-GEMINI_API_KEY=<your-gemini-api-key>
-DEEPSEEK_API_KEY=<your-deepseek-api-key>
-
-PERPLEXITY_API_KEY=<your-perplexity-api-key>
-DEVDOCK_API_KEY=<your-devdock-api-key>
+GEMINI_API_KEY="a_very_long_secret_key_from_google"
+CONVEX_DEPLOYMENT_URL="https://your-cool-project.convex.site"
+PLAGIARISM_API_KEY="another_secret_key"
 ```
 
-### 4. Run the application
+#### Step 3: Start the Magic! (Run with Docker)
 
-You can run the application using Docker Compose:
+This is the easiest and best way to run everything. Docker will build all the parts of our app in special containers, so you don't have to worry about installing a million things.
+
+Make sure Docker is running on your computer, then open your command line in the project folder and run:
 
 ```bash
 docker-compose up --build
 ```
 
-This will start the backend server, the Streamlit frontend, and the Next.js frontend.
+That's it! You're done! Your EduGrade AI is now alive and running.
 
-- **Backend API**: `http://localhost:8000`
-- **Streamlit Dashboard**: `http://localhost:8501`
-- **Next.js App**: `http://localhost:3000`
+-   **Backend API**: You can talk to the robot's brain at `http://localhost:8000`
+-   **Streamlit Dashboard**: See the teacher's dashboard at `http://localhost:8501`
 
-## Testing
+---
 
-To run the tests, you can use `pytest`:
+## 🏗️ Project Structure (A Map of the Robot)
+
+Here’s a map to help you find your way around the code.
+
+```
+edugrade-ai/
+├── backend/          # The Engine Room (where the robot's brain lives)
+│   ├── app/
+│   │   ├── agents/     # The different "mini-bots" for each task
+│   │   ├── api/        # How the outside world talks to the robot
+│   │   ├── core/       # The robot's personality and settings
+│   │   ├── graph/      # The master plan that the agents follow
+│   │   └── services/   # Special tools the robot uses (like the Grade Detector)
+│   ├── convex/       # The blueprint for the robot's memory (database)
+│   └── tests/        # A gym to make sure the robot is working correctly
+│
+├── frontend/         # The Face of the Robot (what users see)
+│   └── streamlit_dashboard.py # The dashboard for teachers and parents
+│
+├── data/             # Where the robot stores its files and models
+│
+├── docker-compose.yml # The instruction manual for Docker
+└── README.md          # You are here!
+```
+
+## 🧪 Testing (Giving the Robot a Check-up)
+
+To make sure all the parts of our robot are working perfectly, we have tests. You can run them with this command:
 
 ```bash
 pytest backend/tests
 ```
+
+This will run a series of check-ups to make sure the robot can still think, read, and grade correctly.
+
+---
+
+Happy Grading! 🎓
