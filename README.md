@@ -68,7 +68,10 @@ cd edugrade-ai
 Create a `.env` file in the root of the project and add the following environment variables:
 
 ```
-GEMINI_API_KEY=<your-google-gemini-api-key>
+DATABASE_URL=<your-supabase-connection-string>
+GEMINI_API_KEY=<your-gemini-api-key>
+DEEPSEEK_API_KEY=<your-deepseek-api-key>
+
 PERPLEXITY_API_KEY=<your-perplexity-api-key>
 DEVDOCK_API_KEY=<your-devdock-api-key>
 ```
