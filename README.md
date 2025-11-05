@@ -39,7 +39,8 @@ Create a `.env` file in the root of the project and add the following environmen
 
 ```
 DATABASE_URL=<your-supabase-connection-string>
-OPENAI_API_KEY=<your-openai-api-key>
+GEMINI_API_KEY=<your-gemini-api-key>
+DEEPSEEK_API_KEY=<your-deepseek-api-key>
 PERPLEXITY_API_KEY=<your-perplexity-api-key>
 ```
 
